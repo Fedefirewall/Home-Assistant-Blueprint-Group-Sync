@@ -1,0 +1,34 @@
+blueprint:
+  name: Group Sync
+  description: Turn on a switch when other one is turned on and vice versa
+  domain: automation
+  input:
+    switches:
+      name: Switches
+      selector:
+        entity:
+          domain: switch
+          multiple: true
+
+trigger:
+  - platform: state
+    entity_id: !input switches
+    from: 'off'
+    to: 'on'
+  - platform: state
+    entity_id: !input switches
+    from: 'on'
+    to: 'off'
+
+action:
+  - wait_template: "{{ (as_timestamp(now()) - as_timestamp(this.attributes.last_triggered | default(0)) | float > 0.5) }}"
+    timeout: 00:00:00.5
+  - service_template: >
+      {% if trigger.to_state.state == 'on' %}
+      switch.turn_on
+      {% elif trigger.to_state.state == 'off' %}
+      switch.turn_off
+      {% endif %}
+    data_template: 
+      entity_id: !input switches
+  
